@@ -1,18 +1,91 @@
 use anchor_lang::prelude::*;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("Dgdg6bDSQgW4wu96iqVvPY3HZnYL59w8UmZ4zDoVQPWF");
 
 #[program]
 pub mod anchor_blog {
-    use super::*;
+    use anchor_lang::solana_program::entrypoint::ProgramResult;
 
-    pub fn initialize(_ctx: Context<Initialize>) -> Result<()> {
+    use super::*;
+    pub fn initialize(ctx: Context<Initialize>) -> ProgramResult {
+        let blog_account = &mut ctx.accounts.blog_account;
+        blog_account.bump = *ctx.bumps.get("blog_account").unwrap();
+        ctx.accounts.blog_account.authority = *ctx.accounts.user.to_account_info().key;
+        Ok(())
+    }
+
+    pub fn create_post(
+        ctx: Context<CreatePost>,
+        post_account_bump: u8,
+        title: String,
+        body: String,
+    ) -> ProgramResult {
+        ctx.accounts.post_account.bump = post_account_bump;
+        ctx.accounts.post_account.authority = *ctx.accounts.authority.to_account_info().key;
+        ctx.accounts.post_account.title = title;
+        ctx.accounts.post_account.body = body;
+        ctx.accounts.post_account.entry = ctx.accounts.blog_account.post_count;
+        ctx.accounts.blog_account.post_count += 1;
+        Ok(())
+    }
+
+    pub fn update_post(ctx: Context<UpdatePost>, title: String, body: String) -> ProgramResult {
+        ctx.accounts.post_account.title = title;
+        ctx.accounts.post_account.body = body;
         Ok(())
     }
 }
 
 #[derive(Accounts)]
-pub struct Initialize {}
+#[instruction(blog_account_bump: u8)]
+pub struct Initialize<'info> {
+    #[account(
+        init,
+        seeds = [
+            b"blog_v0".as_ref(),
+            user.key().as_ref(),
+        ],
+        space = 10000,
+        bump,
+        payer = user
+    )]
+    blog_account: Account<'info, Blog>,
+    #[account(mut)]
+    user: Signer<'info>,
+    system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(post_account_bump: u8, title: String, body: String)]
+pub struct CreatePost<'info> {
+    #[account(mut, has_one = authority)]
+    pub blog_account: Account<'info, Blog>,
+    #[account(
+        init,
+        seeds = [
+            b"post".as_ref(),
+            blog_account.key().as_ref(),
+            &[blog_account.post_count as u8].as_ref()
+        ],
+        bump,
+        payer = authority,
+        space = 10000
+    )]
+    pub post_account: Account<'info, Post>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(tite: String, body: String)]
+pub struct UpdatePost<'info> {
+    #[account(mut, has_one = authority)]
+    pub blog_account: Account<'info, Blog>,
+    #[account(mut, has_one = authority)]
+    pub post_account: Account<'info, Post>,
+    pub authority: Signer<'info>,
+}
 
 #[account]
 #[derive(Default)]
@@ -20,4 +93,14 @@ pub struct Blog {
     pub bump: u8,
     pub post_count: u8,
     pub authority: Pubkey,
+}
+
+#[account]
+#[derive(Default)]
+pub struct Post {
+    pub authority: Pubkey,
+    pub bump: u8,
+    pub entry: u8,
+    pub title: String,
+    pub body: String,
 }
