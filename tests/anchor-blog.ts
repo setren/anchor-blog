@@ -9,18 +9,19 @@ describe("anchor-blog", async () => {
     anchor.AnchorProvider.defaultOptions().preflightCommitment
   );
 
-  const provider: any = helpers.getProvider(
+  const provider:any = helpers.getProvider(
     connection,
     anchor.web3.Keypair.generate()
   );
-  const program: any = helpers.getProgram(provider);
+  const program:any = helpers.getProgram(provider);
 
-  const [blogAccount] = await anchor.web3.PublicKey.findProgramAddress(
-    [Buffer.from("blog_v0"), provider.wallet.publicKey.toBuffer()],
-    program.programId
-  );
+  const [blogAccount, blogAccountBump] =
+    await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("blog_v0"), provider.wallet.publicKey.toBuffer()],
+      program.programId
+    );
 
-  const [firstPostAccount] =
+  const [firstPostAccount, firstPostAccountBump] =
     await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from("post"),
@@ -35,7 +36,7 @@ describe("anchor-blog", async () => {
   });
 
   it("Initializes with 0 entries", async () => {
-    await program.rpc.initialize( {
+    await program.rpc.initialize(blogAccountBump, {
       accounts: {
         blogAccount,
         user: provider.wallet.publicKey,
@@ -52,7 +53,7 @@ describe("anchor-blog", async () => {
     const title = "Hello World";
     const body = "gm, this is a test post";
 
-    await program.rpc.createPost( title, body, {
+    await program.rpc.createPost(firstPostAccountBump, title, body, {
       accounts: {
         blogAccount,
         postAccount: firstPostAccount,
@@ -133,7 +134,7 @@ describe("anchor-blog", async () => {
     const newKeypair = anchor.web3.Keypair.generate();
     await helpers.requestAirdrop(connection, newKeypair.publicKey);
     const newProvider = helpers.getProvider(connection, newKeypair);
-    const newProgram:any = helpers.getProgram(newProvider);
+    const newProgram = helpers.getProgram(newProvider);
 
     let error;
 
@@ -156,7 +157,7 @@ describe("anchor-blog", async () => {
     const newKeypair = anchor.web3.Keypair.generate();
     await helpers.requestAirdrop(connection, newKeypair.publicKey);
     const newProvider = helpers.getProvider(connection, newKeypair);
-    const newProgram: any = helpers.getProgram(newProvider);
+    const newProgram:any = helpers.getProgram(newProvider);
 
     const [newBlogAccount, newBlogAccountBump] =
       await anchor.web3.PublicKey.findProgramAddress(

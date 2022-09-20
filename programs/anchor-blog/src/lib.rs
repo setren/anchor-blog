@@ -7,19 +7,13 @@ pub mod anchor_blog {
     use anchor_lang::solana_program::entrypoint::ProgramResult;
 
     use super::*;
-    pub fn initialize(ctx: Context<Initialize>) -> ProgramResult {
-        let blog_account = &mut ctx.accounts.blog_account;
-        blog_account.bump = *ctx.bumps.get("blog_account").unwrap();
+    pub fn initialize(ctx: Context<Initialize>, blog_account_bump: u8) -> ProgramResult {
+        ctx.accounts.blog_account.bump = blog_account_bump;
         ctx.accounts.blog_account.authority = *ctx.accounts.user.to_account_info().key;
         Ok(())
     }
 
-    pub fn create_post(
-        ctx: Context<CreatePost>,
-        post_account_bump: u8,
-        title: String,
-        body: String,
-    ) -> ProgramResult {
+    pub fn create_post(ctx: Context<CreatePost>, post_account_bump: u8, title: String, body: String) -> ProgramResult {
         ctx.accounts.post_account.bump = post_account_bump;
         ctx.accounts.post_account.authority = *ctx.accounts.authority.to_account_info().key;
         ctx.accounts.post_account.title = title;
@@ -45,9 +39,9 @@ pub struct Initialize<'info> {
             b"blog_v0".as_ref(),
             user.key().as_ref(),
         ],
-        space = 10000,
         bump,
-        payer = user
+        payer = user,
+        space = 10000
     )]
     blog_account: Account<'info, Blog>,
     #[account(mut)]
@@ -74,7 +68,7 @@ pub struct CreatePost<'info> {
     pub post_account: Account<'info, Post>,
     #[account(mut)]
     pub authority: Signer<'info>,
-    pub system_program: Program<'info, System>,
+    pub system_program: Program<'info, System>
 }
 
 #[derive(Accounts)]
