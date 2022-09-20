@@ -190,7 +190,7 @@ describe("anchor-blog", async () => {
     } catch (err) {
       error = err;
     } finally {
-      assert(error?.message.includes("has_one constraint was violated"));
+      assert(error?.message.includes("has one constraint was violated"));
     }
   });
 });
